@@ -21,7 +21,6 @@ export default async function RootLayout({ children }) {
     <html lang="en">
       <body className={`${luckiestGuy.className} antialiased`}>
         <SessionProvider session={session}>
-          <Navbar />
           {children}
         </SessionProvider>
       </body>

@@ -1,7 +1,10 @@
+import Navbar from "@/components/Navbar";
 import Image from "next/image";
 
 export default function Home() {
   return (
+    <>
+    <Navbar/>
     <section className="flex justify-around items-center py-50 max-h-[90vh]">
       <div className="relative h-120 w-200 ">
   <Image
@@ -23,5 +26,6 @@ export default function Home() {
   </div>
 </div>
     </section>
+    </>
   );
 }
