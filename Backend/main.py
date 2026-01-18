@@ -9,7 +9,7 @@ from timm import create_model
 import numpy as np
 from collections import deque
 import time
-import requests
+from groq import Groq  # Simple SDK like your medical bot
 from helpers import get_random_joke, get_one_fact
 from trivia import fetch_questionnaire, score_assessment, interpret_score
 
@@ -38,6 +38,17 @@ try:
 except Exception as e:
     print(f"Error loading model: {e}")
     MODEL_LOADED = False
+
+
+# Initialize Groq Client
+GROQ_API_KEY = os.getenv('GROQ_API_KEY')
+if not GROQ_API_KEY:
+    print("⚠️ Warning: GROQ_API_KEY not found in .env file")
+    groq_client = None
+else:
+    print("✨ Connecting to Groq...")
+    groq_client = Groq(api_key=GROQ_API_KEY)
+    print("✅ Groq Ready!")
 
 
 transform = transforms.Compose([
@@ -184,43 +195,68 @@ def reset_emotion_history():
     return jsonify({'message': 'Emotion history reset successfully'})
 
 
-@app.route('/api/gemini', methods=['POST'])
-def gemini_reply():
+@app.route('/api/grok', methods=['POST'])
+def grok_reply():
     data = request.json
     question = data.get('question')
-    print(question)
+    print(f"User Question: {question}")
+
     if not question:
         return jsonify({'error': 'Question is required'}), 400
 
+    if not groq_client:
+        return jsonify({'error': 'Groq API not configured.'}), 500
 
-    try:
-        headers = {
-            "Authorization": f"Bearer {os.getenv('GEMINI_API_KEY')}",
-            "Content-Type": "application/json",
-        }
-        payload = {"prompt": question}
-        gemini_response = requests.post(os.getenv('GEMINI_API_URL'), json=payload, headers=headers)
-        gemini_response.raise_for_status()
-        gemini_data = gemini_response.json()
-        print(gemini_data)
-        raw_reply = gemini_data.get("reply", "Sorry, no response from Gemini API.")
-    except Exception as e:
-        raw_reply = "Error contacting Gemini API."
-
-
+    # --- STRESS INTERVENTION LOGIC (Keep this as is) ---
     if stress_level == "High" or stress_level == "Medium":
         try:
             joke_resp = get_random_joke()
             if joke_resp:
-                return jsonify({"reply": joke_resp + " Here's something to lighten your mood!"})
-            fact_resp = get_one_fact(os.getenv('API_NINJAS_KEY'))
-            if fact_resp:
-                return jsonify({"reply": fact_resp + " Here's an interesting fact for you!"})
-        except:
-            pass
+                return jsonify({"reply": joke_resp + " I noticed you seem a bit stressed, so here is a joke instead!"})
+        except Exception as e:
+            print(f"Error getting stress relief: {e}")
 
+    # --- DEFINING THE FORMATTING RULES ---
+    # This is where you control the "Look and Feel"
+    system_instruction = """
+    You are a helpful, witty, and empathetic emotional support assistant.
+    
+    FORMATTING RULES:
+    1. Keep responses SHORT and CONCISE (maximum 2-3 sentences) and if there is a scenario that has multiple steps, use bullet points to list them.
+    2. USE bullet points 
+    3. Speak naturally as if talking to a friend.
+    4. Use comma and exclamation marks to express enthusiasm.
+    5. AVOID overly formal language.
+    . Never mention that you are an AI or Assistant.
+    """
 
-    return jsonify({"reply": raw_reply})
+    # --- GROQ INTEGRATION ---
+    try:
+        completion = groq_client.chat.completions.create(
+            messages=[
+                {
+                    "role": "system", 
+                    "content": system_instruction  # <--- WE INJECT THE RULES HERE
+                },
+                {
+                    "role": "user", 
+                    "content": question
+                }
+            ],
+            model="llama-3.3-70b-versatile",
+            temperature=0.7,
+        )
+        
+        response_text = completion.choices[0].message.content
+        
+        # Double check cleanup just in case
+        cleaned_reply = response_text.replace("*", "").replace("#", "").replace("Groq", "I")
+
+        return jsonify({"reply": cleaned_reply})
+
+    except Exception as e:
+        print(f"Groq API Error: {e}")
+        return jsonify({"reply": "Sorry, I'm having trouble right now."})
 
 
 if __name__ == '__main__':
