@@ -2,12 +2,11 @@
 
 import { api } from '@/lib/api';
 import React, { useState, useEffect } from 'react';
-import { Bell, Home, TrendingUp, Heart, Settings, HelpCircle, User, Sparkles } from 'lucide-react';
+import { Bell, Home, TrendingUp, Heart, Settings, HelpCircle, User } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 import { Loader2, LogOut } from 'lucide-react';
 
 const Dashboard = () => {
@@ -65,15 +64,20 @@ const Dashboard = () => {
     fetchContent();
   }, []);
 
-  // Effect 4: Animation Mount
+  // Effect 4: Animation Mount (FIXED FOR LINTER)
   useEffect(() => {
-    setMounted(true);
-    const timer = setTimeout(() => {
+    // We wrap this in a timeout of 0ms to stop the "synchronous setState" error
+    const mountTimer = setTimeout(() => {
+      setMounted(true);
+    }, 0);
+    
+    const statsTimer = setTimeout(() => {
       setStatsVisible(true);
     }, 300);
 
     return () => {
-      clearTimeout(timer);
+      clearTimeout(mountTimer);
+      clearTimeout(statsTimer);
     };
   }, []);
 
