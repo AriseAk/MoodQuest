@@ -1,8 +1,11 @@
 flask
 flask-cors
-opencv-python
-torch
-torchvision
+gunicorn
+torch --index-url https://download.pytorch.org/whl/cpu
+torchvision --index-url https://download.pytorch.org/whl/cpu
 timm
+opencv-python-headless
+python-dotenv
+groq
 numpy
 requests
