@@ -6,35 +6,32 @@ import { Bell, Home, TrendingUp, Heart, Settings, HelpCircle, User, Sparkles } f
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { useSession, signOut } from 'next-auth/react'; // Import signOut
+import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Loader2, LogOut } from 'lucide-react'; // Import LogOut
+import { Loader2, LogOut } from 'lucide-react';
 
 const Dashboard = () => {
-  // Add real-time analytics state
+  // 1. DECLARE ALL HOOKS FIRST
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const params = useParams();
+
+  // State Hooks
   const [realTimeAnalytics, setRealTimeAnalytics] = useState(null);
   const [joke, setJoke] = useState('');
   const [fact, setFact] = useState('');
+  const [activeTab, setActiveTab] = useState('home');
+  const [mounted, setMounted] = useState(false);
+  const [statsVisible, setStatsVisible] = useState(false);
 
-  const { data: session, status } = useSession();
-  const router = useRouter();
-
+  // Effect 1: Auth Redirect
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/auth/login');
     }
   }, [status, router]);
 
-  // Show a loading screen while session is being verified
-  if (status === 'loading') {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="animate-spin text-lime-500" size={64} />
-      </div>
-    );
-  }
-
-  // Fetch analytics every 2 seconds
+  // Effect 2: Fetch Analytics
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
@@ -47,11 +44,10 @@ const Dashboard = () => {
 
     fetchAnalytics();
     const interval = setInterval(fetchAnalytics, 2000);
-
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch joke and fact on mount
+  // Effect 3: Fetch Content
   useEffect(() => {
     const fetchContent = async () => {
       try {
@@ -69,11 +65,7 @@ const Dashboard = () => {
     fetchContent();
   }, []);
 
-  const params = useParams();
-  const [activeTab, setActiveTab] = useState('home');
-  const [mounted, setMounted] = useState(false);
-  const [statsVisible, setStatsVisible] = useState(false);
-
+  // Effect 4: Animation Mount
   useEffect(() => {
     setMounted(true);
     const timer = setTimeout(() => {
@@ -85,6 +77,16 @@ const Dashboard = () => {
     };
   }, []);
 
+  // 2. CONDITIONAL RETURNS (Only allowed AFTER hooks)
+  if (status === 'loading') {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="animate-spin text-lime-500" size={64} />
+      </div>
+    );
+  }
+
+  // 3. MAIN RENDER
   const chartData = [
     { session: 1, performance: 75, mood: 4.0, feedback: 3.8 },
     { session: 2, performance: 60, mood: 3.2, feedback: 3.5 },
@@ -99,7 +101,7 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="flex h-screen  overflow-hidden">
+    <div className="flex h-screen overflow-hidden">
       {/* Animated Background-linear Orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-lime-500/10 rounded-full blur-3xl animate-pulse"
@@ -112,7 +114,6 @@ const Dashboard = () => {
       <div className="w-64 bg-lime-200 flex flex-col">
         <div className="bg-gray-900 text-white p-6 text-center">
           <h1 className="text-2xl font-black tracking-wide">DASHBOARD</h1>
-          {/* --- MODIFICATION #1: Show Session Name --- */}
           <p className="text-sm font-bold text-lime-400 mt-2">
             {session?.user?.name || params.username}
           </p>
@@ -183,7 +184,6 @@ const Dashboard = () => {
             <h1 className="text-4xl font-black text-transparent bg-clip-text bg-linear-to-r from-gray-900 to-lime-600 animate-pulse">
               WELCOME BACK!
             </h1>
-            {/* --- MODIFICATION #2: Show Session Name (Uppercase) --- */}
             <h2 className="text-4xl font-black text-transparent bg-clip-text bg-linear-to-r from-lime-600 to-lime-400">
               {(session?.user?.name || params.username)?.toUpperCase() || 'USER'}
             </h2>
@@ -194,7 +194,6 @@ const Dashboard = () => {
               <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping"></span>
               <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
             </button>
-            {/* --- MODIFICATION #3: Add signOut onClick and styling --- */}
             <button
               onClick={() => signOut({ callbackUrl: '/' })}
               className="flex items-center gap-2 px-8 py-3 bg-linear-to-r from-lime-500 to-lime-600 text-white font-black text-xl rounded-full hover:from-lime-600 hover:to-lime-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 transform"
