@@ -1,10 +1,8 @@
-name: Sync to Hugging Face Hub
+name: Sync Backend to Hugging Face
 
 on:
   push:
-    branches: [main]  # Or 'master' if your branch is named master
-
-  # This allows you to run it manually from the Actions tab for testing
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -16,31 +14,28 @@ jobs:
           fetch-depth: 0
           lfs: true
       
-      - name: Push to hub
+      - name: Push Backend Folder Only
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           git config --global user.email "${{ github.actor }}@users.noreply.github.com"
           git config --global user.name "${{ github.actor }}"
           
-          # --- NUCLEAR FIX START ---
-          # 1. Delete the Git history so we don't push the old "bad" commits
-          rm -rf .git
+          # 1. Enter the Backend folder
+          cd Backend
           
-          # 2. Initialize a fresh repository
+          # 2. Initialize a new "temporary" git repo just for this folder
           git init
           git branch -m main
           
-          # 3. Set up LFS freshly
+          # 3. Set up LFS (Vital for your model file)
           git lfs install
           git lfs track "*.pth"
-          git add .gitattributes
           
-          # 4. Add all files (The model will now definitely be an LFS pointer)
+          # 4. Add all files in this folder (including the new README.md you just made)
           git add .
-          git commit -m "Deploy from GitHub Actions"
-          # -------------------------
+          git commit -m "Deploy Backend Service"
           
-          # 5. Force Push to Hugging Face
+          # 5. Force push THIS FOLDER to Hugging Face
           git remote add space https://akshay1306:$HF_TOKEN@huggingface.co/spaces/akshay1306/moodquest-api
           git push --force space main
