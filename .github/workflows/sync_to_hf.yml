@@ -22,16 +22,25 @@ jobs:
         run: |
           git config --global user.email "${{ github.actor }}@users.noreply.github.com"
           git config --global user.name "${{ github.actor }}"
-
+          
+          # --- NUCLEAR FIX START ---
+          # 1. Delete the Git history so we don't push the old "bad" commits
+          rm -rf .git
+          
+          # 2. Initialize a fresh repository
+          git init
+          git branch -m main
+          
+          # 3. Set up LFS freshly
           git lfs install
           git lfs track "*.pth"
           git add .gitattributes
           
-          # Force the large file to be tracked by LFS
-          # (This converts the 70MB file into a tiny pointer file for the upload)
-          git add Backend/*.pth
-          git commit -m "Convert model to LFS" || true
-
+          # 4. Add all files (The model will now definitely be an LFS pointer)
+          git add .
+          git commit -m "Deploy from GitHub Actions"
+          # -------------------------
           
+          # 5. Force Push to Hugging Face
           git remote add space https://akshay1306:$HF_TOKEN@huggingface.co/spaces/akshay1306/moodquest-api
           git push --force space main
